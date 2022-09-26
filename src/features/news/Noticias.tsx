@@ -1,25 +1,11 @@
 import { useEffect, useState } from "react";
 import { AssinarImage, CloseButton as Close } from "../../assets";
 import { obterNoticias } from "./fakeRest";
-import {
-  CloseButton,
-  CardModal,
-  ContainerModal,
-  DescriptionModal,
-  ImageModal,
-  TituloModal,
-  CardNoticia,
-  DateCardNoticia,
-  DescriptionCardNoticia,
-  ImageCardNoticia,
-  TituloCardNoticia,
-  ContainerNoticias,
-  ListaNoticias,
-  TituloNoticias,
-  BotaoLeitura,
-  BotaoAssinar,
-  ContainerTexto,
-} from "./styled";
+import * as S from "./styled";
+import { firstCharToUpperCase } from "../../utils";
+import NewsCard from "./NewsCard/NewsCard";
+import NewsModalPremium from "./NewsModalPremium/NewsModalPremium";
+import NewsModal from "./NewsModal/NewsModal";
 
 export interface INoticiasNormalizadas {
   id: number;
@@ -39,27 +25,22 @@ const Noticias = () => {
     const obterInformacoes = async () => {
       const resposta = await obterNoticias();
 
-      const data = resposta.map((n) => {
-        const titulo = n.titulo
-          .split(" ")
-          .map((str) => {
-            return str.charAt(0).toUpperCase() + str.slice(1);
-          })
-          .join(" ");
+      const data = resposta.map((noticia) => {
+        const titulo = firstCharToUpperCase(noticia.titulo);
 
         const hora = new Date();
         const minutosDecorrido = Math.floor(
-          (hora.getTime() - n.date.getTime()) / 60000
+          (hora.getTime() - noticia.date.getTime()) / 60000
         );
 
         return {
-          id: n.id,
+          id: noticia.id,
           titulo,
-          description: n.description,
+          description: noticia.description,
           date: `Faz ${minutosDecorrido} minutos`,
-          premium: n.premium,
-          image: n.image,
-          descriptionCurto: n.description.substring(0, 100),
+          premium: noticia.premium,
+          image: noticia.image,
+          descriptionCurto: noticia.description.substring(0, 100),
         };
       });
 
@@ -69,65 +50,39 @@ const Noticias = () => {
     obterInformacoes();
   }, []);
 
+  const changeModalStatus = (n: INoticiasNormalizadas | null) => setModal(n);
+
   return (
-    <ContainerNoticias>
-      <TituloNoticias>Noticias dos Simpsons</TituloNoticias>
-      <ListaNoticias>
-        {noticias.map((n) => (
-          <CardNoticia>
-            <ImageCardNoticia src={n.image} />
-            <TituloCardNoticia>{n.titulo}</TituloCardNoticia>
-            <DateCardNoticia>{n.date}</DateCardNoticia>
-            <DescriptionCardNoticia>
-              {n.descriptionCurto}
-            </DescriptionCardNoticia>
-            <BotaoLeitura onClick={() => setModal(n)}>Ver más</BotaoLeitura>
-          </CardNoticia>
+    <S.ContainerNoticias>
+      <S.TituloNoticias>Noticias dos Simpsons</S.TituloNoticias>
+      <S.ListaNoticias>
+        {noticias.map((noticia) => (
+          <NewsCard 
+            key={noticia.id}
+            image={noticia.image}
+            titulo={noticia.titulo}
+            date={noticia.date}
+            descriptionCurto={noticia.descriptionCurto}
+            changeModalStatus={() => changeModalStatus(noticia)}
+          />
         ))}
+
         {modal ? (
           modal.premium ? (
-            <ContainerModal>
-              <CardModal>
-                <CloseButton onClick={() => setModal(null)}>
-                  <img src={Close} alt="close-button" />
-                </CloseButton>
-                <ImageModal src={AssinarImage} alt="mr-burns-excelent" />
-                <ContainerTexto>
-                  <TituloModal>Assine a nossa newsletter</TituloModal>
-                  <DescriptionModal>
-                    Assine nossa newsletter e receba novidades de nossos
-                    personagens favoritos
-                  </DescriptionModal>
-                  <BotaoAssinar
-                    onClick={() =>
-                      setTimeout(() => {
-                        alert("Suscripto!");
-                        setModal(null);
-                      }, 1000)
-                    }
-                  >
-                    Assinar
-                  </BotaoAssinar>
-                </ContainerTexto>
-              </CardModal>
-            </ContainerModal>
+            <NewsModalPremium 
+              changeModalStatus={() => changeModalStatus(null)}
+            />
           ) : (
-            <ContainerModal>
-              <CardModal>
-                <CloseButton onClick={() => setModal(null)}>
-                  <img src={Close} alt="close-button" />
-                </CloseButton>
-                <ImageModal src={modal.image} alt="news-image" />
-                <ContainerTexto>
-                  <TituloModal>{modal.titulo}</TituloModal>
-                  <DescriptionModal>{modal.description}</DescriptionModal>
-                </ContainerTexto>
-              </CardModal>
-            </ContainerModal>
+            <NewsModal 
+            image={modal.image}
+            titulo={modal.titulo}
+            description={modal.description}
+            changeModalStatus={() => changeModalStatus(null)}
+            />
           )
         ) : null}
-      </ListaNoticias>
-    </ContainerNoticias>
+      </S.ListaNoticias>
+    </S.ContainerNoticias>
   );
 };
 
